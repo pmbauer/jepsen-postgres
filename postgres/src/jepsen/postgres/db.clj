@@ -7,6 +7,7 @@
             [jepsen [control :as c :refer [|]]
                     [core :as jepsen]
                     [db :as db]
+                    [random :as rand]
                     [util :as util :refer [meh random-nonempty-subset]]]
             [jepsen.control.util :as cu]
             [jepsen.control.net :as cn]
@@ -35,6 +36,14 @@
       ; Deactivate default install
       (c/exec :service :postgresql :stop)
       (c/exec "update-rc.d" :postgresql :disable))))
+
+(def process-patterns
+  "Pattens we use to target various postgres processes for killing."
+  ["postgres -D" ; Main process
+   "main: checkpointer"
+   "main: background writer"
+   "main: walwriter"
+   "main: autovacuum launcher"])
 
 (defn db
   "A database which just runs a regular old single-node Postgres instance"
@@ -88,11 +97,19 @@
       (c/su (c/exec :service :postgresql :restart)))
 
     (kill! [db test node]
-      (doseq [pattern (shuffle
-                        ["postgres -D" ; Main process
-                         "main: checkpointer"
-                         "main: background writer"
-                         "main: walwriter"
-                         "main: autovacuum launcher"])]
-        (Thread/sleep (rand-int 100))
-        (info "Killing" pattern "-" (cu/grepkill! pattern))))))
+      (c/su
+        (doseq [pattern (shuffle process-patterns)]
+          (Thread/sleep (rand-int 100))
+          (info "Killing" pattern "-" (cu/grepkill! pattern)))))
+
+    db/Pause
+    (pause! [db test node]
+      (c/su
+        (doseq [pattern (rand/shuffle process-patterns)]
+          (Thread/sleep (rand-int 100))
+          (info "Pausing" pattern "-" (cu/grepkill! "STOP" pattern)))))
+
+    (resume! [db test node]
+      (c/su
+        (doseq [pattern (rand/shuffle process-patterns)]
+          (info "Resuming" pattern "-" (cu/grepkill! "CONT" pattern)))))))
