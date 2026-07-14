@@ -99,17 +99,17 @@
     (kill! [db test node]
       (c/su
         (doseq [pattern (shuffle process-patterns)]
-          (Thread/sleep (rand-int 100))
+          ;(Thread/sleep (rand-int 100))
           (info "Killing" pattern "-" (cu/grepkill! pattern)))))
 
     db/Pause
     (pause! [db test node]
       (c/su
         (doseq [pattern (rand/shuffle process-patterns)]
-          (Thread/sleep (rand-int 100))
-          (info "Pausing" pattern "-" (cu/grepkill! "STOP" pattern)))))
+          ;(Thread/sleep (rand-int 100))
+          (info "Pausing" pattern "-" (cu/grepkill! :STOP pattern)))))
 
     (resume! [db test node]
       (c/su
         (doseq [pattern (rand/shuffle process-patterns)]
-          (info "Resuming" pattern "-" (cu/grepkill! "CONT" pattern)))))))
+          (info "Resuming" pattern "-" (cu/grepkill! :CONT pattern)))))))
