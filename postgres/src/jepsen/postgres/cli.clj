@@ -3,21 +3,22 @@
   (:gen-class)
   (:require [clojure.tools.logging :refer [info warn]]
             [clojure [pprint :refer [pprint]]
-                     [string :as str]]
+             [string :as str]]
             [clojure.java [io :as io]]
             [jepsen [cli :as cli]
-                    [checker :as checker]
-                    [db :as jdb]
-                    [generator :as gen]
-                    [nemesis :as nemesis]
-                    [os :as os]
-                    [sql :as sql]
-                    [tests :as tests]
-                    [util :as util]]
+             [antithesis :as ant]
+             [checker :as checker]
+             [db :as jdb]
+             [generator :as gen]
+             [nemesis :as nemesis]
+             [os :as os]
+             [sql :as sql]
+             [tests :as tests]
+             [util :as util]]
             [jepsen.nemesis.combined :as nc]
             [jepsen.os.debian :as debian]
             [jepsen.postgres [client :as client]
-                             [db :as db]]))
+             [db :as db]]))
 
 (def workloads
   "A map of workload keywords (e.g. :append) to workload-constructing
@@ -69,17 +70,18 @@
   "Given an options map from the command line runner (e.g. :nodes, :ssh,
   :concurrency, ...), constructs a test map."
   [opts]
-  (let [workload-name (:workload opts)
-        workload      ((workloads workload-name) opts)
-        db            (if (:existing-postgres opts)
-                        jdb/noop
-                        (db/db opts))
-        os            (if (:existing-postgres opts)
-                        os/noop
-                        debian/os)
-        nemesis       (if (:existing-postgres opts)
-                        {:nemesis nemesis/noop}
-                        (nc/nemesis-package
+  (ant/test
+   (let [workload-name (:workload opts)
+         workload      ((workloads workload-name) opts)
+         db            (if (:existing-postgres opts)
+                         jdb/noop
+                         (db/db opts))
+         os            (if (:existing-postgres opts)
+                         os/noop
+                         debian/os)
+         nemesis       (if (:existing-postgres opts)
+                         {:nemesis nemesis/noop}
+                         (nc/nemesis-package
                           {:db        db
                            :nodes     (:nodes opts)
                            :faults    (:nemesis opts)
@@ -87,33 +89,33 @@
                            :pause     {:targets [nil :one :primaries :majority :all]}
                            :kill      {:targets [nil :one :primaries :majority :all]}
                            :interval  (:nemesis-interval opts)}))]
-    (merge tests/noop-test
-           opts
-           {:name (str "postgres " (name workload-name)
-                       " " (short-isolation (:isolation opts)) " ("
-                       (short-isolation (:expected-consistency-model opts)) ")"
-                       (when-let [ns (:nemesis opts)]
-                         (str " " (str/join "," (map name (:nemesis opts))))))
-            :os   os
-            :db   db
-            :checker (checker/compose
+     (merge tests/noop-test
+            opts
+            {:name (str "postgres " (name workload-name)
+                        " " (short-isolation (:isolation opts)) " ("
+                        (short-isolation (:expected-consistency-model opts)) ")"
+                        (when-let [ns (:nemesis opts)]
+                          (str " " (str/join "," (map name (:nemesis opts))))))
+             :os   os
+             :db   db
+             :checker (checker/compose
                        {:perf       (checker/perf
-                                      {:nemeses (:perf nemesis)})
+                                     {:nemeses (:perf nemesis)})
                         :clock      (checker/clock-plot)
                         :stats      (checker/stats)
                         :exceptions (checker/unhandled-exceptions)
                         :workload   (:checker workload)})
-            :client    (:client workload)
-            :nemesis   (:nemesis nemesis)
-            :generator (gen/phases
+             :client    (:client workload)
+             :nemesis   (:nemesis nemesis)
+             :generator (gen/phases
                          (->> (:generator workload)
                               (gen/stagger (/ (:rate opts)))
                               (gen/nemesis (:generator nemesis))
                               (gen/time-limit (:time-limit opts))))}
-           ; If we're using an existing postgres install, disable all SSH
-           ; capabilities, including fault injection.
-           (when (:existing-postgres opts)
-             {:ssh {:dummy? true}}))))
+                                        ; If we're using an existing postgres install, disable all SSH
+                                        ; capabilities, including fault injection.
+            (when (:existing-postgres opts)
+              {:ssh {:dummy? true}})))))
 
 (def pg-cli-opts
   "Additional CLI options for Postgres specifically"
@@ -198,12 +200,13 @@
   "Handles command line arguments. Can either run a test, or a web server for
   browsing results."
   [& args]
-  (cli/run! (merge (cli/single-test-cmd {:test-fn  postgres-test
-                                         :opt-spec cli-opts
-                                         :opt-fn   opt-fn})
-                   (cli/test-all-cmd {:tests-fn (partial all-tests
-                                                         postgres-test)
-                                      :opt-spec cli-opts
-                                      :opt-fn   opt-fn})
-                   (cli/serve-cmd))
-            args))
+  (ant/with-rng
+    (cli/run! (merge (cli/single-test-cmd {:test-fn  postgres-test
+                                           :opt-spec cli-opts
+                                           :opt-fn   opt-fn})
+                     (cli/test-all-cmd {:tests-fn (partial all-tests
+                                                           postgres-test)
+                                        :opt-spec cli-opts
+                                        :opt-fn   opt-fn})
+                     (cli/serve-cmd))
+              args)))
