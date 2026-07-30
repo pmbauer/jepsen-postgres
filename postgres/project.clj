@@ -8,13 +8,19 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.12.5"]
                  [jepsen "0.3.13"]
-                 [io.jepsen/sql "0.1.1sb-SNAPSHOT" :exclusions [com.antithesis/sdk]]
-                 [io.jepsen/antithesis "0.1.0" :exclusions [com.antithesis/sdk]]
-                 [com.antithesis/sdk "1.5.1" :exclusions [com.fasterxml.jackson.core/jackson-databind]]
+                 [io.jepsen/sql "0.1.1sb-SNAPSHOT"]
+                 ; Jepsen pulls in jackson 2.16, but the Antithesis SDK
+                 ; expects a different version. It doesn't matter as
+                 ; we are only using the sdk for randomness
+                 [com.antithesis/sdk "1.5.1"
+                  :exclusions [com.fasterxml.jackson.core/jackson-databind
+                               com.fasterxml.jackson.core/jackson-annotations
+                               com.fasterxml.jackson.core/jackson-core]]
                  [com.github.seancorfield/next.jdbc "1.3.1093"]
                  [org.postgresql/postgresql "42.7.11"]
                  [cheshire "6.2.0"]
                  [clj-wallhack "1.0.1"]]
+  :java-source-paths ["src"]
   :main jepsen.postgres.cli
   :aot [jepsen.postgres.cli]
   :jvm-opts ["-Djava.awt.headless=true"
