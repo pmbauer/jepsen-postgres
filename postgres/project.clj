@@ -26,4 +26,8 @@
   :jvm-opts ["-Djava.awt.headless=true"
              "-server"]
   :repl-options {:init-ns jepsen.postgres}
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all
+                       :manifest {"Implementation-Title" "Antithesis FFI for Java"
+                                  "Implementation-Version" "1.5.1"
+                                  "Specification-Title" "Antithesis SDK Protocol"
+                                  "Specification-Version" "1.1.0"}}})
