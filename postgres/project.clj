@@ -1,4 +1,4 @@
-(defproject io.jepsen/postgres "0.1.2"
+(defproject io.jepsen/postgres "0.1.3-SNAPSHOT"
   :description "Jepsen tests for PostgreSQL."
   :url "https://github.com/jepsen-io/postgres"
   :scm     {:name "git"
