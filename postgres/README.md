@@ -2,6 +2,9 @@
 
 Jepsen tests for the Postgres database system.
 
+[![clojars badge](https://img.shields.io/clojars/v/io.jepsen/postgres.svg)](https://clojars.org/io.jepsen/postgres)
+[![cljdoc badge](https://cljdoc.org/badge/io.jepsen/postgres)](https://cljdoc.org/d/io.jepsen/postgres)
+
 ## Usage
 
 To check Postgres `SERIALIZABLE`, try
