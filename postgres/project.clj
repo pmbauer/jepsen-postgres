@@ -6,9 +6,9 @@
             :dir ".."}
   :license {:name "EPL-2.0 OR GPL-2.0-or-later WITH Classpath-exception-2.0"
             :url "https://www.eclipse.org/legal/epl-2.0/"}
-  :dependencies [[org.clojure/clojure "1.12.5"]
-                 [jepsen "0.3.13"]
-                 [io.jepsen/sql "0.1.1sb-SNAPSHOT"]
+  :dependencies [[org.clojure/clojure "1.12.6"]
+                 [jepsen "0.3.14"]
+                 [io.jepsen/sql "0.1.2sb-SNAPSHOT"]
                  ; Jepsen pulls in jackson 2.16, but the Antithesis SDK
                  ; expects a different version. It doesn't matter as
                  ; we are only using the sdk for randomness
@@ -16,7 +16,6 @@
                   :exclusions [com.fasterxml.jackson.core/jackson-databind
                                com.fasterxml.jackson.core/jackson-annotations
                                com.fasterxml.jackson.core/jackson-core]]
-                 [com.github.seancorfield/next.jdbc "1.3.1093"]
                  [org.postgresql/postgresql "42.7.11"]
                  [cheshire "6.2.0"]
                  [clj-wallhack "1.0.1"]]
