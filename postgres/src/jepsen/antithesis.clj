@@ -79,24 +79,33 @@
   with an Antithesis-controlled source. You should wrap your top-level program
   in this."
   [& body]
-  `(rand/with-rng (if (antithesis?)
-                    (Random.)
-                    rand/rng)
-     (with-redefs [jepsen.random/double-weighted-index
-                   (if (antithesis?)
-                     replacement-double-weighted-index
-                     rand/double-weighted-index)
+  `(let [antithesis?# (antithesis?)
+         rng#         (if antithesis?# (Random.) rand/rng)]
+     (rand/with-rng rng#
+       (with-redefs [ ; As of jepsen 0.3.14 jepsen.core/run! and jepsen.cli's test-all
+                      ; wrap themselves in rand/with-seed, which calls thread-local-random
+                      ; and would replace our RNG.
+                      ; Seeds are not effective or used under Antithesis, override with our rng#
+                     jepsen.random/thread-local-random
+                     (if antithesis?#
+                       (fn ([] rng#) ([_seed#] rng#))
+                       rand/thread-local-random)
 
-                   jepsen.random/long
-                   (if (antithesis?)
-                     replacement-long
-                     rand/long)
+                     jepsen.random/double-weighted-index
+                     (if antithesis?#
+                       replacement-double-weighted-index
+                       rand/double-weighted-index)
 
-                   jepsen.random/bool
-                   (if (antithesis?)
-                     replacement-bool
-                     rand/bool)]
-       ~@body)))
+                     jepsen.random/long
+                     (if antithesis?#
+                       replacement-long
+                       rand/long)
+
+                     jepsen.random/bool
+                     (if antithesis?#
+                       replacement-bool
+                       rand/bool)]
+         ~@body))))
 
 (defn test
   "Prepares a Jepsen test for running in Antithesis. When running inside
